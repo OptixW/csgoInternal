@@ -1,4 +1,4 @@
-//========= Copyright © 1996-2005, Valve Corporation, All rights reserved. ============//
+//========= Copyright Â© 1996-2005, Valve Corporation, All rights reserved. ============//
 //
 // Purpose: Generic CRC functions
 //
@@ -6,7 +6,7 @@
 
 #define CRC32_INIT_VALUE 0xFFFFFFFFUL
 #define CRC32_XOR_VALUE  0xFFFFFFFFUL
-#include "checksum_crc.h"
+#include "checksum_crc.hpp"
 
 template <typename T>
 inline T DWordSwapAsm(T dw)

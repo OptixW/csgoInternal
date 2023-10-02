@@ -33,55 +33,51 @@ using create_move_t = void(__thiscall*)(IBaseClientDLL*, int, float, bool);
 static create_move_t ofunc;
 void __stdcall CHLCreateMove(int sequence_number, float input_sample_frametime, bool active, bool& bSendPacket)
 {
-	__try
-	{
-		ofunc(p_ClientBase, sequence_number, input_sample_frametime, active);
+    __try
+    {
+        ofunc(p_ClientBase, sequence_number, input_sample_frametime, active);
 
-		if (!p_Client)
-			return;
-		if (!p_Entity)
-			return;
-		if (!p_Client->IsInGame())
-			return;
-		auto* pCmd = input->GetUserCmd(sequence_number);
-		if (!pCmd)
-			return;
+        if (!p_Client || !p_Entity || !p_Client->IsInGame())
+            return;
 
-		auto* verified = input->GetVerifiedCmd(sequence_number);
-		if (!verified)
-			return;
-		auto* pLocal = (CBaseEntity*)(p_Entity->GetClientEntity(p_Client->GetLocalPlayer()));
-		if (!pLocal)
-			return;
-		g_aimbot->AimLock(pCmd, pLocal);
-		if (!(pLocal->GetFlags() & FL_ONGROUND))
-			pCmd->buttons &= ~IN_JUMP;
-	
-		if (pCmd->buttons & IN_JUMP && !(pLocal->GetFlags() & FL_ONGROUND))
-		{
-			if (pCmd->mousedx < 0)
-				pCmd->sidemove = -400.0f;
-			if (pCmd->mousedx > 0)
-				pCmd->sidemove = 400.0f;
-		}
+        auto* pCmd = input->GetUserCmd(sequence_number);
+        if (!pCmd)
+            return;
 
-		if (pLocal->GetHealth() > 0)
-			if (g_aimbot->CanHit(pCmd->viewangles, pLocal))
-			{
-				if (GetAsyncKeyState(VK_MENU) & 0x8000)
-					pCmd->buttons |= IN_ATTACK;
-			}
+        auto* verified = input->GetVerifiedCmd(sequence_number);
+        if (!verified)
+            return;
 
-		g_aimbot->RCS(pCmd, pLocal);
+        auto* pLocal = dynamic_cast<CBaseEntity*>(p_Entity->GetClientEntity(p_Client->GetLocalPlayer()));
+        if (!pLocal)
+            return;
 
-		verified->m_cmd = *pCmd;
-		verified->m_crc = pCmd->GetChecksum();
-	}
-	__except (EXCEPTION_EXECUTE_HANDLER)
+        g_aimbot->AimLock(pCmd, pLocal);
+        
+        if (!(pLocal->GetFlags() & FL_ONGROUND))
+            pCmd->buttons &= ~IN_JUMP;
 
-	{
-	}
+        if (pCmd->buttons & IN_JUMP && !(pLocal->GetFlags() & FL_ONGROUND))
+        {
+            pCmd->sidemove = (pCmd->mousedx < 0) ? -400.0f : 400.0f;
+        }
+
+        if (pLocal->GetHealth() > 0 && g_aimbot->CanHit(pCmd->viewangles, pLocal) && (GetAsyncKeyState(VK_MENU) & 0x8000))
+        {
+            pCmd->buttons |= IN_ATTACK;
+        }
+
+        g_aimbot->RCS(pCmd, pLocal);
+
+        verified->m_cmd = *pCmd;
+        verified->m_crc = pCmd->GetChecksum();
+    }
+    __except (EXCEPTION_EXECUTE_HANDLER)
+    {
+        // Обработка исключений
+    }
 }
+
 
 __declspec(naked) void __stdcall hkCreateMove(int sequence_number, float input_sample_frametime, bool active)
 {

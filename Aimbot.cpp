@@ -88,23 +88,23 @@ bool Aimbot::CanHit(Source::Vector3 viewangles, CBaseEntity* LocalEntity) const
 
 void Aimbot::AimLock(CUserCmd* pCmd, CBaseEntity* pLocalEntity) const
 {
-	if (CanHit(pCmd->viewangles, pLocalEntity))
-	{
-		CBaseEntity* pEnt = p_Entity->GetClientEntity(pLocalEntity->GetCrosshairID());
+    if (!CanHit(pCmd->viewangles, pLocalEntity))
+        return;
 
-		if (!pEnt->IsValid())
-			return;
-		if (GetAsyncKeyState(0x01) & 0x8000)
-		{
-			auto Angles = calcAngle(pLocalEntity->GetEyePosition(), pEnt->GetBonePosition(7));
-			Angles = smoothAngle(pCmd->viewangles, 15, Angles);
-			if (pEnt->IsDead())
-				return;
-			pCmd->viewangles = Angles;
-			p_Client->SetViewAngles(pCmd->viewangles);
-		}
-	}
+    CBaseEntity* targetEntity = p_Entity->GetClientEntity(pLocalEntity->GetCrosshairID());
+    if (!targetEntity->IsValid() || targetEntity->IsDead())
+        return;
+
+    if (GetAsyncKeyState(0x01) & 0x8000)
+    {
+        auto aimAngle = calcAngle(pLocalEntity->GetEyePosition(), targetEntity->GetBonePosition(7));
+        auto smoothedAngle = smoothAngle(pCmd->viewangles, 15, aimAngle);
+
+        pCmd->viewangles = smoothedAngle;
+        p_Client->SetViewAngles(smoothedAngle);
+    }
 }
+
 
 
 Source::Vector3 Aimbot::smoothAngle(const Source::Vector3& currentAngle, float fSmoothPercentage, const Source::Vector3& targetAngle) const

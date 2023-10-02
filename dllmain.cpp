@@ -4,17 +4,19 @@
 #include "Entity.hpp"
 #include "includes.hpp"
 
-Aimbot* g_aimbot;
-dll_helper* engine = new dll_helper("engine.dll");
-dll_helper* client = new dll_helper("client.dll");
+
+std::unique_ptr<Aimbot> g_aimbot = std::make_unique<Aimbot>();
+std::unique_ptr<dll_helper> engine = std::make_unique<dll_helper>("engine.dll");
+std::unique_ptr<dll_helper> client = std::make_unique<dll_helper>("client.dll");
 
 IVEngineClient* p_Client = static_cast<IVEngineClient*>(engine->get_vmt("VEngineClient014"));
 IClientEntityList* p_Entity = static_cast<IClientEntityList*>(client->get_vmt("VClientEntityList003"));
 CInput* input = nullptr;
 IBaseClientDLL* p_ClientBase = static_cast<IBaseClientDLL*>(client->get_vmt("VClient018"));
 IEngineTrace* ptrace = static_cast<IEngineTrace*>(engine->get_vmt("EngineTraceClient004"));
-CVMTHookManager* hook = new CVMTHookManager(static_cast<PDWORD*>(client->get_vmt("VClient018")));
+std::unique_ptr<CVMTHookManager> hook = std::make_unique<CVMTHookManager>(static_cast<PDWORD*>(client->get_vmt("VClient018")));
 CGlobalVarsBase* pServer = nullptr;
+
 
 #define COLLISION_GROUP_NONE 0
 #define COLLISION_GROUP_BREAKABLE_GLASS 6

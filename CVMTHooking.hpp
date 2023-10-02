@@ -96,3 +96,4 @@ private:
     DWORD* m_pdwOldVMT{ nullptr };
     DWORD m_dwVMTSize{ 0 };
 };
+

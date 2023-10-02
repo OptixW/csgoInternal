@@ -1,100 +1,98 @@
 #pragma once
 #include <cstring>
 #include <Windows.h>
+#include <memory>
 
 class CVMTHookManager
 {
 public:
-	CVMTHookManager(void)
-	{
-		memset(this, 0, sizeof(CVMTHookManager));
-	}
+    CVMTHookManager() = default;
 
-	CVMTHookManager(PDWORD* ppdwClassBase)
-	{
-		bInitialize(ppdwClassBase);
-	}
+    explicit CVMTHookManager(DWORD** ppdwClassBase)
+    {
+        initialize(ppdwClassBase);
+    }
 
-	~CVMTHookManager(void)
-	{
-		UnHook();
-	}
-	bool bInitialize(PDWORD* ppdwClassBase)
-	{
-		m_ppdwClassBase = ppdwClassBase;
-		m_pdwOldVMT = *ppdwClassBase;
-		m_dwVMTSize = dwGetVMTCount(*ppdwClassBase);
-		m_pdwNewVMT = new DWORD[m_dwVMTSize];
-		memcpy(m_pdwNewVMT, m_pdwOldVMT, sizeof(DWORD) * m_dwVMTSize);
-		*ppdwClassBase = m_pdwNewVMT;
-		return true;
-	}
-	bool bInitialize(PDWORD** pppdwClassBase) 
-	{
-		return bInitialize(*pppdwClassBase);
-	}
+    ~CVMTHookManager()
+    {
+        unhook();
+    }
 
-	void UnHook(void)
-	{
-		if (m_ppdwClassBase)
-		{
-			*m_ppdwClassBase = m_pdwOldVMT;
-		}
-	}
+    bool initialize(DWORD** ppdwClassBase)
+    {
+        m_ppdwClassBase = ppdwClassBase;
+        m_pdwOldVMT = *ppdwClassBase;
+        m_dwVMTSize = getVMTCount(*ppdwClassBase);
+        m_pdwNewVMT = std::make_unique<DWORD[]>(m_dwVMTSize);
+        std::memcpy(m_pdwNewVMT.get(), m_pdwOldVMT, sizeof(DWORD) * m_dwVMTSize);
+        *ppdwClassBase = m_pdwNewVMT.get();
+        return true;
+    }
 
-	void ReHook(void)
-	{
-		if (m_ppdwClassBase)
-		{
-			*m_ppdwClassBase = m_pdwNewVMT;
-		}
-	}
+    void unhook()
+    {
+        if (m_ppdwClassBase)
+        {
+            *m_ppdwClassBase = m_pdwOldVMT;
+        }
+    }
 
-	int iGetFuncCount(void)
-	{
-		return (int)m_dwVMTSize;
-	}
+    void rehook()
+    {
+        if (m_ppdwClassBase)
+        {
+            *m_ppdwClassBase = m_pdwNewVMT.get();
+        }
+    }
 
-	DWORD dwGetMethodAddress(int Index)
-	{
-		if (Index >= 0 && Index <= (int)m_dwVMTSize && m_pdwOldVMT != NULL)
-		{
-			return m_pdwOldVMT[Index];
-		}
-		return NULL;
-	}
+    int getFuncCount() const
+    {
+        return static_cast<int>(m_dwVMTSize);
+    }
 
-	PDWORD pdwGetOldVMT(void)
-	{
-		return m_pdwOldVMT;
-	}
+    DWORD getMethodAddress(int index) const
+    {
+        if (index >= 0 && index <= static_cast<int>(m_dwVMTSize) && m_pdwOldVMT)
+        {
+            return m_pdwOldVMT[index];
+        }
+        return nullptr;
+    }
 
-	DWORD dwHookMethod(DWORD dwNewFunc, unsigned int iIndex)
-	{
-		if (m_pdwNewVMT && m_pdwOldVMT && iIndex <= m_dwVMTSize && iIndex >= 0)
-		{
-			m_pdwNewVMT[iIndex] = dwNewFunc;
-			return m_pdwOldVMT[iIndex];
-		}
+    DWORD* getOldVMT() const
+    {
+        return m_pdwOldVMT;
+    }
 
-		return NULL;
-	}
+    DWORD hookMethod(DWORD dwNewFunc, unsigned int index)
+    {
+        if (m_pdwNewVMT && m_pdwOldVMT && index <= m_dwVMTSize && index >= 0)
+        {
+            m_pdwNewVMT[index] = dwNewFunc;
+            return m_pdwOldVMT[index];
+        }
+
+        return nullptr;
+    }
 
 private:
-	DWORD dwGetVMTCount(PDWORD pdwVMT)
-	{
-		DWORD dwIndex = 0;
+    DWORD getVMTCount(DWORD* pdwVMT) const
+    {
+        DWORD dwIndex = 0;
 
-		for (dwIndex = 0; pdwVMT[dwIndex]; dwIndex++)
-		{
-			if (IsBadCodePtr((FARPROC)pdwVMT[dwIndex]))
-			{
-				break;
-			}
-		}
-		return dwIndex;
-	}
-	PDWORD* m_ppdwClassBase;
-	PDWORD	m_pdwNewVMT, m_pdwOldVMT;
-	DWORD	m_dwVMTSize;
+        while (pdwVMT[dwIndex])
+        {
+            if (IsBadCodePtr(reinterpret_cast<FARPROC>(pdwVMT[dwIndex])))
+            {
+                break;
+            }
+            dwIndex++;
+        }
+        return dwIndex;
+    }
+
+    DWORD** m_ppdwClassBase{ nullptr };
+    std::unique_ptr<DWORD[]> m_pdwNewVMT;
+    DWORD* m_pdwOldVMT{ nullptr };
+    DWORD m_dwVMTSize{ 0 };
 };

@@ -6,13 +6,16 @@
 #include <string_view>
 #include "CVMTHooking.hpp"
 
-template< typename Function > Function call_vfunc(PVOID Base, const size_t Index)
+template<typename Function>
+constexpr inline Function call_vfunc(void* Base, size_t Index)
 {
-	const auto VTablePointer = static_cast<PDWORD*>(Base);
-	const auto VTableFunctionBase = *VTablePointer;
-	auto dw_address = VTableFunctionBase[Index];
-	return reinterpret_cast<Function>(dw_address);
+    using VTableType = DWORD*;
+    const auto VTablePointer = static_cast<VTableType*>(Base);
+    const auto VTableFunctionBase = *VTablePointer;
+    auto dw_address = VTableFunctionBase[Index];
+    return reinterpret_cast<Function>(dw_address);
 }
+
 
 
 

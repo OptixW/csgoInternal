@@ -10,21 +10,22 @@
 #define HITGROUP_LEFTLEG	6
 #define HITGROUP_RIGHTLEG	7
 #define HITGROUP_GEAR		10
+
+
 Source::Vector3 Aimbot::calcAngle(const Source::Vector3& source, const Source::Vector3& dst) const
 {
-	Source::Vector3 delta;
+    Source::Vector3 delta = source - dst;
 
-	delta = source - dst;
-	auto hyp = sqrt(delta.x * delta.x + delta.y * delta.y);
-	Source::Vector3 result;
-	result.x = RAD2DEG((atan(delta.z / hyp)));
-	result.y = RAD2DEG((atan(delta.y / delta.x)));
-	result.z = 0.0f;
+    float hypotenuse = std::hypot(delta.x, delta.y);
+    Source::Vector3 result;
 
-	if (delta.x >= 0.0)
-		result.y += 180.0f;
-	return result;
+    result.x = RAD2DEG(std::atan2(delta.z, hypotenuse));
+    result.y = RAD2DEG(std::atan2(delta.y, delta.x));
+    result.z = 0.0f;
+
+    return result;
 }
+
 void Aimbot::RCS(CUserCmd* pCmd, CBaseEntity* pLocalEntity) const
 {
     static Source::Vector3 previousPunch;

@@ -27,27 +27,26 @@ Source::Vector3 Aimbot::calcAngle(const Source::Vector3& source, const Source::V
 }
 void Aimbot::RCS(CUserCmd* pCmd, CBaseEntity* pLocalEntity) const
 {
-	static Source::Vector3 old;
-	static Source::Vector3 mView;
+    static Source::Vector3 previousPunch;
+    static Source::Vector3 viewWithPreviousPunch;
 
-	if (pLocalEntity->GetShotsFired() > 1)
-	{
-		Source::Vector3 m_PunchAngle = pLocalEntity->GetPunchAngle();
-		mView = pCmd->viewangles;
-		mView += old;
-		m_PunchAngle *= 2.0f;
-		Source::Vector3 angle = mView - m_PunchAngle;
-		Source::ClampAngles(angle);
-		pCmd->viewangles = angle;
-		p_Client->SetViewAngles(pCmd->viewangles);
-		old = m_PunchAngle;
-	}
-	else
-	{
-		old.x = 0;
-		old.y = 0;
-	}
+    if (pLocalEntity->GetShotsFired() <= 1)
+    {
+        previousPunch = {0, 0, 0};
+        return;
+    }
+
+    const auto currentPunch = pLocalEntity->GetPunchAngle() * 2.0f;
+
+    auto compensatedView = pCmd->viewangles + previousPunch - currentPunch;
+    Source::ClampAngles(compensatedView);
+
+    pCmd->viewangles = compensatedView;
+    p_Client->SetViewAngles(compensatedView);
+
+    previousPunch = currentPunch;
 }
+
 
 bool Aimbot::CanHit(Source::Vector3 viewangles, CBaseEntity* LocalEntity) const
 {

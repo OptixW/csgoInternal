@@ -3,7 +3,7 @@
 #include "Math.hpp"
 #include "checksum_crc.h"
 #include <Windows.h>
-
+#include <string_view>
 #include "CVMTHooking.hpp"
 
 template< typename Function > Function call_vfunc(PVOID Base, const size_t Index)
@@ -14,25 +14,31 @@ template< typename Function > Function call_vfunc(PVOID Base, const size_t Index
 	return reinterpret_cast<Function>(dw_address);
 }
 
+
+
 struct dll_helper
 {
 	using t_create_interface = void* (*)(const char* name, int* returnCode);
-	explicit dll_helper(const std::string&& dll_name) : dll_name_(dll_name.c_str())
+
+	explicit dll_helper(std::string_view dll_name) : dll_name_(dll_name)
 	{
-		module_ = GetModuleHandleA(dll_name_);
+		module_ = GetModuleHandleA(dll_name_.c_str());
 		interface_ = reinterpret_cast<t_create_interface>(GetProcAddress(module_, "CreateInterface"));
 	}
-	void* get_vmt(const std::string&& interface_name)
+
+	void* get_vmt(std::string_view interface_name)
 	{
-		vmt = interface_(interface_name.c_str(), nullptr);
-		return vmt;
+		vmt_ = interface_(interface_name.data(), nullptr);
+		return vmt_;
 	}
+
 private:
-	const char* dll_name_;
-	t_create_interface interface_;
-	void* vmt;
-	HMODULE module_;
+	std::string dll_name_;
+	t_create_interface interface_ = nullptr;
+	void* vmt_ = nullptr;
+	HMODULE module_ = nullptr;
 };
+
 
 class IClientNetworkable;
 class IClientThinkable;

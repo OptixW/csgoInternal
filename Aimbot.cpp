@@ -106,47 +106,43 @@ void Aimbot::AimLock(CUserCmd* pCmd, CBaseEntity* pLocalEntity) const
 	}
 }
 
-Source::Vector3 Aimbot::smoothAngle(const Source::Vector3& currentAngle, float fSmoothPercentage, const Source::Vector3& angles) const
+
+Source::Vector3 Aimbot::smoothAngle(const Source::Vector3& currentAngle, float fSmoothPercentage, const Source::Vector3& targetAngle) const
 {
-	const float smoothing = fSmoothPercentage;
-	const Source::Vector3 viewangles = currentAngle;
+    const float smoothing = fSmoothPercentage;
+    Source::Vector3 delta = targetAngle - currentAngle;
 
-	Source::Vector3 delta = angles - viewangles;
+    float targetPitch = (targetAngle.y < 0) ? (360.f + targetAngle.y) : targetAngle.y;
+    float currentPitch = (currentAngle.y < 0) ? (360.f + currentAngle.y) : currentAngle.y;
+    float pitchDifference = std::fmin(std::fabs(targetPitch - currentPitch), 360.f - std::fabs(targetPitch - currentPitch));
 
-	auto target_pitch = angles.y;
-	auto view_pitch = viewangles.y;
+    Source::Vector3 resultAngle;
 
-	auto smooth_factor = 100.f;
-	Source::Vector3 result;
+    if (currentAngle.y > 90.f && targetAngle.y < -90.f)
+    {
+        resultAngle.x = currentAngle.x + delta.x * smoothing / 100.f;
+        resultAngle.y = currentAngle.y + pitchDifference * smoothing / 100.f;
+        if (targetAngle.y > 180.f)
+            resultAngle.y = -360.f + targetAngle.y;
+    }
+    else if (currentAngle.y < -90.f && targetAngle.y > 90.f)
+    {
+        resultAngle.x = currentAngle.x + delta.x * smoothing / 100.f;
+        resultAngle.y = currentAngle.y - pitchDifference * smoothing / 100.f;
+        if (targetAngle.y < -180.f)
+            resultAngle.y = 360.f + targetAngle.y;
+    }
+    else
+    {
+        resultAngle.x = currentAngle.x + delta.x * smoothing / 100.f;
+        resultAngle.y = currentAngle.y + delta.y * smoothing / 100.f;
+    }
 
-	if (angles.y < 0) target_pitch = 360.f + angles.y;
-	if (viewangles.y < 0) view_pitch = 360.f + viewangles.y;
-
-	float pitch = min(abs(target_pitch - view_pitch), 360.f - abs(target_pitch - view_pitch));
-
-	if (viewangles.y > 90.f && angles.y < -90.f)
-	{
-		result.x = viewangles.x + delta.x / smooth_factor * smoothing;
-		result.y = viewangles.y + pitch / smooth_factor * smoothing;
-		if (angles.y > 180.f)
-			result.y = -360.f + angles.y;
-		return result;
-	}
-	if (viewangles.y < -90.f && angles.y > 90.f)
-	{
-		result.x = viewangles.x + delta.x / smooth_factor * smoothing;
-		result.y = viewangles.y - pitch / smooth_factor * smoothing;
-		if (angles.y < -180.f)
-			result.y = 360.f + angles.y;
-		return result;
-	}
-
-	result.x = viewangles.x + delta.x / smooth_factor * smoothing;
-	result.y = viewangles.y + delta.y / smooth_factor * smoothing;
-	result.z = 0.0f;
-	ClampAngles(result);
-	return result;
+    resultAngle.z = 0.0f;
+    ClampAngles(resultAngle);
+    return resultAngle;
 }
+
 
 bool Aimbot::Visible(const Source::Vector3& vEnd, CBaseEntity* pEntity) const
 {
